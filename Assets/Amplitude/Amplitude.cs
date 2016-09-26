@@ -142,6 +142,8 @@ public class Amplitude {
 	private static extern void _Amplitude_appendUserPropertyLongArray(string property, long[] value, int length);
 	[DllImport ("__Internal")]
 	private static extern void _Amplitude_appendUserPropertyStringArray(string property, string[] value, int length);
+	[DllImport ("__Internal")]
+	private static extern void _Amplitude_setMinTimeBetweenSessionsMillis (long timeout);
 #endif
 
 	public static Amplitude Instance {
@@ -1232,6 +1234,21 @@ public class Amplitude {
 #if UNITY_ANDROID
 		if (Application.platform == RuntimePlatform.Android) {
 			pluginClass.CallStatic("appendUserProperty", property, array);
+		}
+#endif
+	}
+
+	public void setMinTimeBetweenSessionsMillis (long timeout) {
+		Log (string.Format ("C# setMinTimeBetweenSessionsMillis to {0}", timeout));
+#if UNITY_IPHONE
+		if (Application.platform == RuntimePlatform.IPhonePlayer) {
+			_Amplitude_setMinTimeBetweenSessionsMillis(timeout);
+		}
+#endif
+
+#if UNITY_ANDROID
+		if (Application.platform == RuntimePlatform.Android) {
+			pluginClass.CallStatic("setMinTimeBetweenSessionsMillis", timeout);
 		}
 #endif
 	}
