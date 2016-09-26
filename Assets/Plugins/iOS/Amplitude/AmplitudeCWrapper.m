@@ -541,3 +541,7 @@ void _Amplitude_appendUserPropertyStringArray(const char* property, const char* 
     AMPIdentify *identify = [[AMPIdentify identify] append:ToNSString(property) value:array];
     [[Amplitude instance] identify:identify];
 }
+
+void _Amplitude_setMinTimeBetweenSessionsMillis (const long timeout) {
+    [Amplitude instance].minTimeBetweenSessionsMillis = timeout;
+}
