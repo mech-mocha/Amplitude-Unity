@@ -339,18 +339,16 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
     for (id event in events) {
         NSError *error = nil;
         NSData *jsonData = nil;
-        @try {
-            jsonData = [NSJSONSerialization dataWithJSONObject:[AMPUtils makeJSONSerializable:event] options:0 error:&error];
-        }
-        @catch (NSException *exception) {
-            AMPLITUDE_ERROR(@"ERROR: NSJSONSerialization error: %@", exception.reason);
-            continue;
-        }
+        jsonData = [NSJSONSerialization dataWithJSONObject:[AMPUtils makeJSONSerializable:event] options:0 error:&error];
         if (error != nil) {
             AMPLITUDE_ERROR(@"ERROR: NSJSONSerialization error: %@", error);
             continue;
         }
         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        if ([AMPUtils isEmptyString:jsonString]) {
+            AMPLITUDE_ERROR(@"ERROR: NSJSONSerialization resulted in a null string, skipping this event");
+            continue;
+        }
         success &= [defaultDbHelper addEvent:jsonString];
         SAFE_ARC_RELEASE(jsonString);
     }
@@ -461,7 +459,7 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
     }
 
     if (!_initialized) {
-        SAFE_ARC_RETAIN(apiKey);
+        (void) SAFE_ARC_RETAIN(apiKey);
         SAFE_ARC_RELEASE(_apiKey);
         _apiKey = apiKey;
 
@@ -601,8 +599,17 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
         [self annotateEvent:event];
 
         // convert event dictionary to JSON String
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[AMPUtils makeJSONSerializable:event] options:0 error:NULL];
+        NSError *error = nil;
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[AMPUtils makeJSONSerializable:event] options:0 error:&error];
+        if (error != nil) {
+            AMPLITUDE_ERROR(@"ERROR: could not JSONSerialize event type %@: %@", eventType, error);
+            return;
+        }
         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        if ([AMPUtils isEmptyString:jsonString]) {
+            AMPLITUDE_ERROR(@"ERROR: JSONSerializing event type %@ resulted in an NULL string", eventType);
+            return;
+        }
         if ([eventType isEqualToString:IDENTIFY_EVENT]) {
             (void) [self.dbHelper addIdentify:jsonString];
         } else {
@@ -809,24 +816,22 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
 
         NSError *error = nil;
         NSData *eventsDataLocal = nil;
-        @try {
-            eventsDataLocal = [NSJSONSerialization dataWithJSONObject:uploadEvents options:0 error:&error];
-        }
-        @catch (NSException *exception) {
-            AMPLITUDE_ERROR(@"ERROR: NSJSONSerialization error: %@", exception.reason);
-            _updatingCurrently = NO;
-            return;
-        }
+        eventsDataLocal = [NSJSONSerialization dataWithJSONObject:uploadEvents options:0 error:&error];
         if (error != nil) {
             AMPLITUDE_ERROR(@"ERROR: NSJSONSerialization error: %@", error);
             _updatingCurrently = NO;
             return;
         }
-        if (eventsDataLocal) {
-            NSString *eventsString = [[NSString alloc] initWithData:eventsDataLocal encoding:NSUTF8StringEncoding];
-            [self makeEventUploadPostRequest:kAMPEventLogUrl events:eventsString maxEventId:maxEventId maxIdentifyId:maxIdentifyId];
-            SAFE_ARC_RELEASE(eventsString);
-       }
+
+        NSString *eventsString = [[NSString alloc] initWithData:eventsDataLocal encoding:NSUTF8StringEncoding];
+        if ([AMPUtils isEmptyString:eventsString]) {
+            AMPLITUDE_ERROR(@"ERROR: JSONSerialization of event upload data resulted in a NULL string");
+            _updatingCurrently = NO;
+            return;
+        }
+
+        [self makeEventUploadPostRequest:kAMPEventLogUrl events:eventsString maxEventId:maxEventId maxIdentifyId:maxIdentifyId];
+        SAFE_ARC_RELEASE(eventsString);
     }];
 }
 
@@ -1281,7 +1286,7 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
     }
     
     [self runOnBackgroundQueue:^{
-        SAFE_ARC_RETAIN(userId);
+        (void) SAFE_ARC_RETAIN(userId);
         SAFE_ARC_RELEASE(_userId);
         _userId = userId;
         (void) [self.dbHelper insertOrReplaceKeyValue:USER_ID value:_userId];
@@ -1323,7 +1328,7 @@ static NSString *const SEQUENCE_NUMBER = @"sequence_number";
     }
 
     [self runOnBackgroundQueue:^{
-        SAFE_ARC_RETAIN(deviceId);
+        (void) SAFE_ARC_RETAIN(deviceId);
         SAFE_ARC_RELEASE(_deviceId);
         _deviceId = deviceId;
         (void) [self.dbHelper insertOrReplaceKeyValue:DEVICE_ID value:deviceId];
