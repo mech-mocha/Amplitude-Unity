@@ -144,6 +144,8 @@ public class Amplitude {
 	private static extern void _Amplitude_appendUserPropertyStringArray(string property, string[] value, int length);
 	[DllImport ("__Internal")]
 	private static extern void _Amplitude_setMinTimeBetweenSessionsMillis (long timeout);
+	[DllImport ("__Internal")]
+	private static extern void _Amplitude_useAdvertisingIdForDeviceId ();
 #endif
 
 	public static Amplitude Instance {
@@ -1249,6 +1251,21 @@ public class Amplitude {
 #if UNITY_ANDROID
 		if (Application.platform == RuntimePlatform.Android) {
 			pluginClass.CallStatic("setMinTimeBetweenSessionsMillis", timeout);
+		}
+#endif
+	}
+
+	public void useAdvertisingIdForDeviceId () {
+		Log (string.Format ("C# set useAdvertisingIdForDeviceId"));
+#if UNITY_IPHONE
+		if (Application.platform == RuntimePlatform.IPhonePlayer) {
+			_Amplitude_useAdvertisingIdForDeviceId();
+		}
+#endif
+		
+#if UNITY_ANDROID
+		if (Application.platform == RuntimePlatform.Android) {
+			pluginClass.CallStatic("useAdvertisingIdForDeviceId");
 		}
 #endif
 	}
