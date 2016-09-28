@@ -545,3 +545,7 @@ void _Amplitude_appendUserPropertyStringArray(const char* property, const char* 
 void _Amplitude_setMinTimeBetweenSessionsMillis (const long timeout) {
     [Amplitude instance].minTimeBetweenSessionsMillis = timeout;
 }
+
+void _Amplitude_useAdvertisingIdForDeviceId () {
+    [[Amplitude instance] useAdvertisingIdForDeviceId];
+}
